@@ -5,9 +5,6 @@ const request = require('request');
 
 http.createServer(function (req, res) {
 	res.writeHead(200, {'Content-Type': 'text/html'});
-
-	console.log(getCurrentDate());
-
 	var q = url.parse(req.url, true).query;
 
 	var buildStatus = q.state;
@@ -65,7 +62,7 @@ http.createServer(function (req, res) {
 				url: getInitialMessage(commitSHA, namespace, buildName, deployURL, buildURL),
 				method: 'POST'
 			}, (err, resp, body) => {
-				console.log("Heres the initial message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
+				//console.log("Heres the initial message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
 				
 			});
 		}
@@ -79,7 +76,7 @@ function getThreadURL(message) {
 		return "";
 	}
 	var replyMessage = message.blocks[0].text.text;
-	return `https://slack.com/api/chat.postMessage?token=${process.env.SLACK_TOKEN}&text=` + replyMessage + "&thread_ts=" + message.ts + "&pretty=1"
+	return `https://slack.com/api/chat.postMessage?channel=CJG5P1K7C&token=${process.env.SLACK_TOKEN}&text=` + replyMessage + "&thread_ts=" + message.ts + "&pretty=1"
 }
 
 function getUpdateURL(buildStatus, message, commitSHA) {
