@@ -42,14 +42,14 @@ http.createServer(function (req, res) {
 						url: getThreadURL(messages[i]),
 						method: 'POST'
 					}, (err, resp, body) => {
-						console.log("Heres the reply message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
+						//console.log("Heres the reply message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
 					});
 					await sleep(500);
 					request({
 						url: getUpdateURL(buildStatus, messages[i], commitSHA),
 						method: 'POST'
 					}, (err, resp, body) => {
-						console.log("Heres the edit message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
+						//console.log("Heres the edit message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
 					});
 					//console.log("Correct message found!" + messages[i].text + "\n\n");
 					return;
@@ -117,7 +117,7 @@ function getInitialMessage(commitSHA, namespace, buildName, deployURL, buildURL)
 	var message = "Please wait while we are preparing your build";
 	lastUpdate = getCurrentDate();
 
-	return `https://slack.com/api/chat.postMessage?token=${process.env.SLACK_TOKEN}&channel=CJG5P1K7C&text=` + commitSHA + "&blocks=" + getBlock(message, buildName, lastUpdate, deployURL, namespace, buildURL, commitSHA) + "&pretty=1";
+	return `https://slack.com/api/chat.postMessage?token=${process.env.SLACK_TOKEN}&channel=CJG5P1K7C&text=` + commitSHA + "&blocks=" + getBlock(message, buildName, lastUpdate, deployURL, namespace, buildURL, commitSHA) + "&username=DevopsBot&pretty=1";
 }
 
 function getCurrentDate() {
@@ -126,14 +126,14 @@ function getCurrentDate() {
 		+ time.getDate() + "/" + (((time.getMonth()+1) < 10)?"0":"") 
 		+ (time.getMonth()+1) + "/" + time.getFullYear() 
 		+ " " 
-		+ ((time.getHours() < 10)?"0":"") + time.getHours() + ":" 
+		+ ((time.getHours() < 10)?"0":"") + (time.getHours() + 2) + ":" 
 		+ ((time.getMinutes() < 10)?"0":"") + time.getMinutes() + ":" 
 		+ ((time.getSeconds() < 10)?"0":"") + time.getSeconds();
 }
 
 function getBlock(headMessage, buildName, lastUpdate, deploymentLink, namespace, buildSource, sha) {
 
-	return "[{\"type\": \"section\",\"text\": {	\"type\": \"mrkdwn\",	\"text\": \"" + headMessage + "\" }},{\"type\": \"divider\"	},{\"type\": \"section\",	\"fields\": [	{ \"type\": \"mrkdwn\", \"text\": \"*Build name*\n" + buildName + "\"},{\"type\": \"mrkdwn\",\"text\": \"*Latest update:*\n" + lastUpdate + "\"},{\"type\": \"mrkdwn\",\"text\": \"*Deployment link:*\n<" + deploymentLink + "|Unavaliable until deployment complete>\"},{\"type\": \"mrkdwn\",\"text\": \"*Namespace:*\n" + namespace + "\"},{\"type\": \"mrkdwn\",\"text\": \"*Build src:*\n<" + buildSource + "|Link to GitHub>\"}]}]";
+	return "[{\"type\": \"section\",\"text\": {	\"type\": \"mrkdwn\",	\"text\": \"" + headMessage + "\" }},{\"type\": \"divider\"	},{\"type\": \"section\",	\"fields\": [	{ \"type\": \"mrkdwn\", \"text\": \"*Build name*\n" + buildName + "\"},{\"type\": \"mrkdwn\",\"text\": \"*Latest update:*\n" + lastUpdate + "\"},{\"type\": \"mrkdwn\",\"text\": \"*Deployment link:*\n<" + deploymentLink + "|Details>\"},{\"type\": \"mrkdwn\",\"text\": \"*Namespace:*\n" + namespace + "\"},{\"type\": \"mrkdwn\",\"text\": \"*Build src:*\n<" + buildSource + "|Link to GitHub>\"}]}]";
 }
 
 
