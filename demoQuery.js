@@ -5,6 +5,9 @@ const request = require('request');
 
 http.createServer(function (req, res) {
 	res.writeHead(200, {'Content-Type': 'text/html'});
+
+	console.log(getCurrentDate());
+
 	var q = url.parse(req.url, true).query;
 
 	var buildStatus = q.state;
@@ -42,14 +45,14 @@ http.createServer(function (req, res) {
 						url: getThreadURL(messages[i]),
 						method: 'POST'
 					}, (err, resp, body) => {
-						//console.log("Heres the reply message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
+						console.log("Heres the reply message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
 					});
 					await sleep(500);
 					request({
 						url: getUpdateURL(buildStatus, messages[i], commitSHA),
 						method: 'POST'
 					}, (err, resp, body) => {
-						//console.log("Heres the edit message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
+						console.log("Heres the edit message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
 					});
 					//console.log("Correct message found!" + messages[i].text + "\n\n");
 					return;
@@ -62,7 +65,7 @@ http.createServer(function (req, res) {
 				url: getInitialMessage(commitSHA, namespace, buildName, deployURL, buildURL),
 				method: 'POST'
 			}, (err, resp, body) => {
-				//console.log("Heres the initial message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
+				console.log("Heres the initial message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
 				
 			});
 		}
