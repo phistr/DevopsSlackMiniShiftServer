@@ -122,8 +122,7 @@ function getInitialMessage(commitSHA, namespace, buildName, deployURL, buildURL)
 
 function getCurrentDate() {
 	var time = new Date();
-	return 
-		((time.getDate() < 10)?"0":"") 
+	return ((time.getDate() < 10)?"0":"") 
 		+ time.getDate() + "/" + (((time.getMonth()+1) < 10)?"0":"") 
 		+ (time.getMonth()+1) + "/" + time.getFullYear() 
 		+ " " 
