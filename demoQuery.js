@@ -63,7 +63,6 @@ http.createServer(function (req, res) {
 					method: 'POST'
 				}, (err, resp, body) => {
 					//console.log("Heres the initial message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
-
 				});
 		}
 	});
@@ -127,7 +126,7 @@ function getCurrentDate() {
 
 function getBlock(headMessage, buildName, lastUpdate, deploymentLink, namespace, buildSource, sha) {
 
-	return "[{\"type\": \"section\",\"text\": {	\"type\": \"mrkdwn\",	\"text\": \"" + headMessage + "\" }},{\"type\": \"divider\"	},{\"type\": \"section\",	\"fields\": [	{ \"type\": \"mrkdwn\", \"text\": \"*Build name*\n" + buildName + "\"},{\"type\": \"mrkdwn\",\"text\": \"*Latest update:*\n" + lastUpdate + "\"},{\"type\": \"mrkdwn\",\"text\": \"*Deployment link:*\n<" + deploymentLink + "|Details>\"},{\"type\": \"mrkdwn\",\"text\": \"*Namespace:*\n" + namespace + "\"},{\"type\": \"mrkdwn\",\"text\": \"*Build src:*\n<" + buildSource + "|Link to GitHub>\"}]}]";
+	return "[{\"type\": \"section\",\"text\": {	\"type\": \"mrkdwn\",	\"text\": \"" + headMessage + "\" }},{\"type\": \"divider\"	},{\"type\": \"section\",	\"fields\": [	 {\"type\": \"mrkdwn\",\"text\": \"*Latest update:*\n" + lastUpdate + "\"},{\"type\": \"mrkdwn\",\"text\": \"*Deployment link:*\n<" + deploymentLink + "|" + buildName + ">\"},{\"type\": \"mrkdwn\",\"text\": \"*Namespace:*\n" + namespace + "\"},{\"type\": \"mrkdwn\",\"text\": \"*Build src:*\n<" + buildSource + "|" + buildSource.split("/")[3] + "/" + buildSource.split("/")[4] + ">\"}]}]";
 }
 
 async function sleep(msec) {
