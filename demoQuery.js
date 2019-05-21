@@ -14,62 +14,59 @@ http.createServer(function (req, res) {
 	var deployURL = q.deployURL;
 	var buildURL = q.buildURL;
 
-	if (buildStatus !== 'init') {
 
-		if (typeof commitSHA === 'undefined' || typeof buildStatus === 'undefined') {
-			var errorText;
-			if (typeof commitSHA === 'undefined') {
-				console.log("The commit sha is undefined!");
-			}
-			if (typeof buildStatus === 'undefined') {
-				console.log("The build state is undefined");
-			}
-			console.log("Ignoring request...");
-			return;
+	if (typeof commitSHA === 'undefined' || typeof buildStatus === 'undefined') {
+		var errorText;
+		if (typeof commitSHA === 'undefined') {
+			console.log("The commit sha is undefined!");
 		}
+		if (typeof buildStatus === 'undefined') {
+			console.log("The build state is undefined");
+		}
+		console.log("Ignoring request...");
+		return;
+	}
 
-		console.log("Received a request with status: " + buildStatus);
+	console.log("Received a request with status: " + buildStatus);
 
-		request({
-			url: `https://slack.com/api/channels.history?token=${process.env.SLACK_TOKEN}&channel=CJG5P1K7C&pretty=1`,
-			method: 'POST',
-		}, async (err, resp, body) => {
-			if (err == null) {
-				var messages = JSON.parse(body).messages;
+	request({
+		url: `https://slack.com/api/channels.history?token=${process.env.SLACK_TOKEN}&channel=CJG5P1K7C&pretty=1`,
+		method: 'POST',
+	}, async (err, resp, body) => {
+		if (err == null) {
+			var messages = JSON.parse(body).messages;
 
-				for(var i = 0; i < messages.length; i++) {
-					if (messages[i].text.includes(commitSHA)) {
-						// Correct message found!
-						request({
-							url: getThreadURL(messages[i]),
-							method: 'POST'
-						}, (err, resp, body) => {
-							//console.log("Heres the reply message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
-						});
-						await sleep(500);
-						request({
-							url: getUpdateURL(buildStatus, messages[i], commitSHA),
-							method: 'POST'
-						}, (err, resp, body) => {
-							//console.log("Heres the edit message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
-						});
-						//console.log("Correct message found!" + messages[i].text + "\n\n");
-						return;
-					}
-				}
-				// There has been no message from this commit
-				//console.log("inget tidigare meddelande hittat, skickar ett nytt\n\n");
-				var initialSlackMessage = "Det här är ett första meddelande"
+			for(var i = 0; i < messages.length; i++) {
+				if (messages[i].text.includes(commitSHA)) {
+					// Correct message found!
 					request({
-						url: getInitialMessage(commitSHA, namespace, buildName, deployURL, buildURL),
+						url: getThreadURL(messages[i]),
 						method: 'POST'
 					}, (err, resp, body) => {
-						//console.log("Heres the initial message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
-
+						//console.log("Heres the reply message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
 					});
+					await sleep(500);
+					request({
+						url: getUpdateURL(buildStatus, messages[i], commitSHA),
+						method: 'POST'
+					}, (err, resp, body) => {
+						//console.log("Heres the edit message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
+					});
+					//console.log("Correct message found!" + messages[i].text + "\n\n");
+					return;
+				}
 			}
-		});
-	}
+			// There has been no message from this commit
+			//console.log("inget tidigare meddelande hittat, skickar ett nytt\n\n");
+				request({
+					url: getInitialMessage(commitSHA, namespace, buildName, deployURL, buildURL),
+					method: 'POST'
+				}, (err, resp, body) => {
+					//console.log("Heres the initial message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
+
+				});
+		}
+	});
 	res.end("Standard response, funkar bra hittills");
 }).listen(8080);
 
@@ -85,6 +82,9 @@ function getThreadURL(message) {
 function getUpdateURL(buildStatus, message, commitSHA) {
 	var slackMessage;
 	switch(buildStatus) {
+		case "testing":
+			slackMessage = "Currently running your tests! :runner:";
+			break;
 		case "failure": // test fails
 			slackMessage = "Some tests failed! :negative_squared_cross_mark:";
 			break;
