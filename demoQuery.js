@@ -14,59 +14,62 @@ http.createServer(function (req, res) {
 	var deployURL = q.deployURL;
 	var buildURL = q.buildURL;
 
-	if (typeof commitSHA === 'undefined' || typeof buildStatus === 'undefined') {
-		var errorText;
-		if (typeof commitSHA === 'undefined') {
-			console.log("The commit sha is undefined!");
-		}
-		if (typeof buildStatus === 'undefined') {
-			console.log("The build state is undefined");
-		}
-		console.log("Ignoring request...");
-		return;
-	}
+	if (buildStatus !== 'init') {
 
-	console.log("Received a request with status: " + buildStatus);
-
-	request({
-		url: `https://slack.com/api/channels.history?token=${process.env.SLACK_TOKEN}&channel=CJG5P1K7C&pretty=1`,
-		method: 'POST',
-	}, async (err, resp, body) => {
-		if (err == null) {
-			var messages = JSON.parse(body).messages;
-
-			for(var i = 0; i < messages.length; i++) {
-				if (messages[i].text.includes(commitSHA)) {
-					// Correct message found!
-					request({
-						url: getThreadURL(messages[i]),
-						method: 'POST'
-					}, (err, resp, body) => {
-						//console.log("Heres the reply message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
-					});
-					await sleep(500);
-					request({
-						url: getUpdateURL(buildStatus, messages[i], commitSHA),
-						method: 'POST'
-					}, (err, resp, body) => {
-						//console.log("Heres the edit message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
-					});
-					//console.log("Correct message found!" + messages[i].text + "\n\n");
-					return;
-				}
+		if (typeof commitSHA === 'undefined' || typeof buildStatus === 'undefined') {
+			var errorText;
+			if (typeof commitSHA === 'undefined') {
+				console.log("The commit sha is undefined!");
 			}
-			// There has been no message from this commit
-			//console.log("inget tidigare meddelande hittat, skickar ett nytt\n\n");
-			var initialSlackMessage = "Det här är ett första meddelande"
-			request({
-				url: getInitialMessage(commitSHA, namespace, buildName, deployURL, buildURL),
-				method: 'POST'
-			}, (err, resp, body) => {
-				//console.log("Heres the initial message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
-				
-			});
+			if (typeof buildStatus === 'undefined') {
+				console.log("The build state is undefined");
+			}
+			console.log("Ignoring request...");
+			return;
 		}
-	});
+
+		console.log("Received a request with status: " + buildStatus);
+
+		request({
+			url: `https://slack.com/api/channels.history?token=${process.env.SLACK_TOKEN}&channel=CJG5P1K7C&pretty=1`,
+			method: 'POST',
+		}, async (err, resp, body) => {
+			if (err == null) {
+				var messages = JSON.parse(body).messages;
+
+				for(var i = 0; i < messages.length; i++) {
+					if (messages[i].text.includes(commitSHA)) {
+						// Correct message found!
+						request({
+							url: getThreadURL(messages[i]),
+							method: 'POST'
+						}, (err, resp, body) => {
+							//console.log("Heres the reply message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
+						});
+						await sleep(500);
+						request({
+							url: getUpdateURL(buildStatus, messages[i], commitSHA),
+							method: 'POST'
+						}, (err, resp, body) => {
+							//console.log("Heres the edit message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
+						});
+						//console.log("Correct message found!" + messages[i].text + "\n\n");
+						return;
+					}
+				}
+				// There has been no message from this commit
+				//console.log("inget tidigare meddelande hittat, skickar ett nytt\n\n");
+				var initialSlackMessage = "Det här är ett första meddelande"
+					request({
+						url: getInitialMessage(commitSHA, namespace, buildName, deployURL, buildURL),
+						method: 'POST'
+					}, (err, resp, body) => {
+						//console.log("Heres the initial message logs:\nErr: " + err + "\nresp: " + resp + "\nbody: " + body);	
+
+					});
+			}
+		});
+	}
 	res.end("Standard response, funkar bra hittills");
 }).listen(8080);
 
@@ -76,45 +79,36 @@ function getThreadURL(message) {
 		return "";
 	}
 	var replyMessage = message.blocks[0].text.text;
-	return `https://slack.com/api/chat.postMessage?channel=CJG5P1K7C&token=${process.env.SLACK_TOKEN}&text=` + replyMessage + "&thread_ts=" + message.ts + "&pretty=1"
+	return `https://slack.com/api/chat.postMessage?channel=CJG5P1K7C&token=${process.env.SLACK_TOKEN}&text=` + replyMessage + "&thread_ts=" + message.ts + "&username=DevopsBot&pretty=1"
 }
 
 function getUpdateURL(buildStatus, message, commitSHA) {
 	var slackMessage;
 	switch(buildStatus) {
-		case "building":
-			slackMessage = "Building... :building_construction:";
+		case "failure": // test fails
+			slackMessage = "Some tests failed! :negative_squared_cross_mark:";
 			break;
-		case "compiling":
-			slackMessage = "Compiling... :dvd:";
-			break;
-		case "testing":
-			slackMessage = "Running tests.... :cold_sweat:";
-			break;
-		case "specific_tests":
-			slackMessage = "We are running a specific test";
-			break;
-		case "pending":
-			slackMessage = "We are currently deploying";
+		case "pending": // test succeeds
+			slackMessage = "Tests succeeded! :heavy_check_mark:\nDeployment is pending...";
 			break;
 		case "success":
-			slackMessage = "It is now deployed :joy::ok_hand::joy::ok_hand:";
+			slackMessage = "The application is now deployed :joy::ok_hand::joy::ok_hand::airplane_departure:";
 			break;
 		default:
 			console.log("Error: Couln't find the build status: " + buildStatus + "\n\n");
-			slackMessage = "Undefined state!";
+			slackMessage = "Error, undefined state!";
 			break;
 	}
 
 	message.blocks[2].fields[1].text = "*Latest update:*\n" + getCurrentDate();
-	
+
 	message.blocks[0].text.text = slackMessage;
 	console.log("Sending block with header: " + message.blocks[0].text.text + "\n");
 	return `https://slack.com/api/chat.update?token=${process.env.SLACK_TOKEN}&channel=CJG5P1K7C&text=` + commitSHA + "&blocks=" + JSON.stringify(message.blocks) + "&ts=" + message.ts + "&pretty=1";
 }
 
 function getInitialMessage(commitSHA, namespace, buildName, deployURL, buildURL) {
-	var message = "Please wait while we are preparing your build";
+	var message = "There has been a commit! Tests are currently running on your latest version :runner:";
 	lastUpdate = getCurrentDate();
 
 	return `https://slack.com/api/chat.postMessage?token=${process.env.SLACK_TOKEN}&channel=CJG5P1K7C&text=` + commitSHA + "&blocks=" + getBlock(message, buildName, lastUpdate, deployURL, namespace, buildURL, commitSHA) + "&username=DevopsBot&pretty=1";
@@ -136,7 +130,6 @@ function getBlock(headMessage, buildName, lastUpdate, deploymentLink, namespace,
 	return "[{\"type\": \"section\",\"text\": {	\"type\": \"mrkdwn\",	\"text\": \"" + headMessage + "\" }},{\"type\": \"divider\"	},{\"type\": \"section\",	\"fields\": [	{ \"type\": \"mrkdwn\", \"text\": \"*Build name*\n" + buildName + "\"},{\"type\": \"mrkdwn\",\"text\": \"*Latest update:*\n" + lastUpdate + "\"},{\"type\": \"mrkdwn\",\"text\": \"*Deployment link:*\n<" + deploymentLink + "|Details>\"},{\"type\": \"mrkdwn\",\"text\": \"*Namespace:*\n" + namespace + "\"},{\"type\": \"mrkdwn\",\"text\": \"*Build src:*\n<" + buildSource + "|Link to GitHub>\"}]}]";
 }
 
-
 async function sleep(msec) {
-	    return new Promise(resolve => setTimeout(resolve, msec));
+	return new Promise(resolve => setTimeout(resolve, msec));
 }
